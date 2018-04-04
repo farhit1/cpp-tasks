@@ -1,6 +1,7 @@
 #include "ahalaimahalai.cpp"
 #include <iostream>
 
+
 // SOME CONSTANTS
 
 constexpr int Zero      = 0;
@@ -99,8 +100,6 @@ struct Winner<xsum, val, restOfVals...> {
 };
 
 
-// STORES ANSWERS
-
 template<int... vals>
 struct AhalaiMahalai {
     static constexpr int who = Winner<Zero, vals...>::winner;
@@ -116,8 +115,8 @@ struct AhalaiMahalai {
 
 
 int main() {
-    constexpr int who = AhalaiMahalai<1, 17, 993, 149552>::who;
-    constexpr int whence = AhalaiMahalai<1, 17, 993, 149552>::whence;
-    constexpr int how = AhalaiMahalai<1, 17, 993, 149552>::how;
+    constexpr int who = AhalaiMahalai<1, 1, 1>::who;
+    constexpr int whence = AhalaiMahalai<1, 1, 1>::whence;
+    constexpr int how = AhalaiMahalai<1, 1, 1>::how;
     std::cout << who << ' ' << whence << ' ' << how;
 }
