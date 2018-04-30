@@ -15,7 +15,7 @@ class XorList {
         value_type  value;
         Node*       xor_addr;
 
-        Node(const value_type& value, Node* xor_addr);
+        Node(const value_type&  value, Node* xor_addr);
         Node(const value_type&& value, Node* xor_addr);
         ~Node() = default;
     };
