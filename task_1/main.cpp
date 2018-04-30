@@ -4,14 +4,22 @@
 #include "StackAllocator.h"
 #include "XorList.h"
 
-int main() {
-    int a = clock();
-    XorList<int> x1(1'000'000, 5);
-    std::cout << double(clock() - a) / CLOCKS_PER_SEC << std::endl;
+double stopwatch() {
+    static clock_t last;
+    clock_t now = clock();
+    double elapsedTime = static_cast<double>(now - last) / CLOCKS_PER_SEC;
+    last = now;
+    return elapsedTime;
+}
 
-    int b = clock();
+int main() {
+    stopwatch();
+    XorList<int> x1(1'000'000, 5);
+    std::cout << stopwatch() << std::endl;
+    
+    stopwatch();
     XorList<int, StackAllocator<int>> x2(1'000'000, 5);
-    std::cout << double(clock() - b) / CLOCKS_PER_SEC << std::endl;
+    std::cout << stopwatch() << std::endl;
     
     return 0;
 }
