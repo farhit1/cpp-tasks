@@ -1,11 +1,29 @@
 #include "StackAllocator.h"
 
-const MemoryPool::size_type MemoryPool::_blockSize = 2e8;
-
 std::unique_ptr<char[]>
-        MemoryPool::_block(new char[MemoryPool::_blockSize]);
+        MemoryPool::block(new char[MemoryPool::blockSize]);
 
-size_t MemoryPool::_pos = 0;
+size_t MemoryPool::pos = 0;
+
+std::unique_ptr<typename MemoryPool::BlockNode> MemoryPool::prevBlock = nullptr;
+
+void* MemoryPool::blockGet(size_type n) {
+    pos += n;
+    return &block[pos - n];
+}
+
+void* MemoryPool::get(size_type n) {
+    if (blockSize - pos < n) {
+        auto x = std::unique_ptr<BlockNode>(new BlockNode{
+                std::move(block),
+                std::move(prevBlock)
+        });
+        prevBlock = std::move(x);
+        block = std::move(std::unique_ptr<char[]>(new char[MemoryPool::blockSize]));
+        pos = 0;
+    }
+    return blockGet(n);
+}
 
 template <typename T>
 StackAllocator<T>::StackAllocator() {}
@@ -17,11 +35,7 @@ template <typename T>
 typename StackAllocator<T>::pointer StackAllocator<T>::allocate(
         typename StackAllocator<int>::size_type n,
         typename StackAllocator<void>::const_pointer hint) {
-    pointer start = reinterpret_cast<pointer>(
-            &MemoryPool::_block[MemoryPool::_pos]
-    );
-    MemoryPool::_pos += n * sizeof(value_type);
-    return start;
+    return reinterpret_cast<T*>(MemoryPool::get(n * sizeof(T)));
 }
 
 template<typename T>
