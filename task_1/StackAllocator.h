@@ -4,13 +4,27 @@
 #include <cstddef>
 #include <memory>
 
+
+class MemoryPool {
+    typedef size_t      size_type;
+
+    static const size_type          _blockSize;
+    static std::unique_ptr<char[]>  _block;
+    static size_type                _pos;
+
+    template<typename T>
+    friend class StackAllocator;
+
+    MemoryPool() = delete;
+};
+
+
 template <typename T>
 class StackAllocator;
 
 
 template <>
-class StackAllocator<void>
-{
+class StackAllocator<void> {
 public:
     typedef void*       pointer;
     typedef const void* const_pointer;
@@ -25,10 +39,6 @@ public:
 
 template <typename T>
 class StackAllocator {
-    static const size_t             _blockSize;     // size of large piece of memory
-    static std::unique_ptr<char[]>  _block;         // large piece of memory
-    static size_t                   _pos;
-
 public:
     typedef T*          pointer;
     typedef const T*    const_pointer;
@@ -47,7 +57,10 @@ public:
 
     ~StackAllocator();
 
-    pointer allocate(size_t n, StackAllocator<void>::const_pointer hint = 0);
+    pointer allocate(
+            size_t n,
+            StackAllocator<void>::const_pointer hint = 0
+    );
 
     void deallocate(T* p, size_type n);
 
