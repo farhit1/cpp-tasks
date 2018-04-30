@@ -14,7 +14,7 @@ double stopwatch() {
 
 int main() {
     stopwatch();
-    XorList<int> x1(1'000'000, 5);
+    XorList<int, std::allocator<int>> x1(1'000'000, 5);
     std::cout << stopwatch() << std::endl;
     
     stopwatch();
