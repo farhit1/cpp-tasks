@@ -4,16 +4,25 @@
 #include <cstddef>
 #include <memory>
 
-
 class MemoryPool {
     typedef size_t      size_type;
 
-    static const size_type          _blockSize;
-    static std::unique_ptr<char[]>  _block;
-    static size_type                _pos;
+    static const size_type blockSize = 1e7;
 
-    template<typename T>
-    friend class StackAllocator;
+    static std::unique_ptr<char[]>      block;
+    static size_type                    pos;
+
+    struct BlockNode {
+        std::unique_ptr<char[]> block;
+        std::unique_ptr<BlockNode> nextBlock;
+    };
+
+    static std::unique_ptr<BlockNode>   prevBlock;
+
+    static void* blockGet(size_type n);
+
+public:
+    static void* get(size_type n);
 
     MemoryPool() = delete;
 };
