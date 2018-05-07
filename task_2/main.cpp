@@ -2,16 +2,24 @@
  * sample usage of allocation schema
  */
 
-// #define _print_deallocate
-
-#include "MemoryManagement.cpp"
+#include "MemoryManager.h"
 #include <iostream>
 
+/*
+struct A {
+    int *a;
+    A() {
+        a = new int(5);
+    }
+};
+
+static A a();
+*/
 
 class StackAllocatorMini : public IMemoryManager {
     static const size_t _poolSize = 1e5;
-    static std::unique_ptr<char[]> _pool;
-    static std::unique_ptr<int[]> _x;
+    static char _pool[_poolSize];
+    static char _x[_poolSize];
     static size_t _taken;
 
     void* _Alloc(size_t size) override {
@@ -26,29 +34,39 @@ class StackAllocatorMini : public IMemoryManager {
             *(reinterpret_cast<char*>(p) + i) = 0xff;
     }
 };
-std::unique_ptr<char[]> StackAllocatorMini::_pool(new char[StackAllocatorMini::_poolSize]);
-std::unique_ptr<int[]> StackAllocatorMini::_x(new int[StackAllocatorMini::_poolSize]);
+char StackAllocatorMini::_pool[] = {};
+char StackAllocatorMini::_x[] = {};
 size_t StackAllocatorMini::_taken = 0;
 
 
 struct X : public CAllocatedOn<CurrentMemoryManager> {
     int a;
+    X(int a) : a(a) {}
 };
 
 struct Y : public CAllocatedOn<RuntimeHeap> {
     int a;
+    Y(int a) : a(a) {}
 };
 
 
 int main() {
-    CMemoryManagerSwitcher switcher1(new StackAllocatorMini());
-    auto a = new X();
-    auto a1 = new X();
-    auto b = new Y();
-    CMemoryManagerSwitcher switcher2(new DefaultAllocator());
-    auto c = new X();
+    StackAllocatorMini alloc1;
+    CMemoryManagerSwitcher switcher1(&alloc1);
+
+    auto a = new X(5);
+    auto a1 = new X(6);
+    auto b = new Y(7);
+
+    std::cout << a->a << " " << a1->a << std::endl;
+    std::cout << b->a << std::endl;
+
     delete a;
     delete a1;
+
+    DefaultAllocator alloc2;
+    CMemoryManagerSwitcher switcher2(&alloc2);
+    auto c = new X(8);
     delete b;
     delete c;
 
