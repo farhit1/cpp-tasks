@@ -9,22 +9,25 @@
 
 
 class StackAllocatorMini : public IMemoryManager {
-    static const size_t _poolSize = 1e7;
+    static const size_t _poolSize = 1e5;
     static std::unique_ptr<char[]> _pool;
+    static std::unique_ptr<int[]> _x;
     static size_t _taken;
 
-public:
-    StackAllocatorMini() = default;
-    ~StackAllocatorMini() = default;
-
-    void* Alloc(size_t size) override {
+    void* _Alloc(size_t size) override {
         _taken += size;
+        _x[_taken - size] = size;
         return reinterpret_cast<void*>(&_pool[_taken - size]);
     }
 
-    void Free(void* p) override {}
+    void _Free(void* p) override {
+        int size = _x[reinterpret_cast<char*>(p) - &_pool[0]];
+        for (size_t i = 0; i < size; ++i)
+            *(reinterpret_cast<char*>(p) + i) = 0xff;
+    }
 };
 std::unique_ptr<char[]> StackAllocatorMini::_pool(new char[StackAllocatorMini::_poolSize]);
+std::unique_ptr<int[]> StackAllocatorMini::_x(new int[StackAllocatorMini::_poolSize]);
 size_t StackAllocatorMini::_taken = 0;
 
 
@@ -38,12 +41,14 @@ struct Y : public CAllocatedOn<RuntimeHeap> {
 
 
 int main() {
-    CMemoryManagerSwitcher::switchAllocator(new StackAllocatorMini());
+    CMemoryManagerSwitcher switcher1(new StackAllocatorMini());
     auto a = new X();
+    auto a1 = new X();
     auto b = new Y();
-    CMemoryManagerSwitcher::switchAllocator(new DefaultAllocator());
+    CMemoryManagerSwitcher switcher2(new DefaultAllocator());
     auto c = new X();
     delete a;
+    delete a1;
     delete b;
     delete c;
 
