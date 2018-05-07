@@ -3,25 +3,45 @@
 
 #include <cstdlib>
 #include <memory>
+#include <assert.h>
 
 #ifdef _print_deallocate
 #include <iostream>
 #endif
 
 class IMemoryManager {
+    size_t _counter;
+
+    virtual void* _Alloc(size_t size) = 0;
+    virtual void _Free(void* ptr) = 0;
+
 public:
-    virtual void* Alloc(size_t size) = 0;
-    virtual void Free(void* ptr) = 0;
+    void* Alloc(size_t size) {
+        ++_counter;
+        return _Alloc(size);
+    }
+
+    void Free(void* ptr) {
+        --_counter;
+        _Free(ptr);
+    }
+
+
+    IMemoryManager() :
+        _counter(0) {}
+
+    ~IMemoryManager() {
+        assert(_counter == 0);
+    }
 };
 
 
 class DefaultAllocator : public IMemoryManager {
-public:
-    void* Alloc(size_t size) override {
+    void* _Alloc(size_t size) override {
         return malloc(size);
     }
 
-    void Free(void* ptr) override {
+    void _Free(void* ptr) override {
         return free(ptr);
     }
 };
@@ -33,20 +53,20 @@ class CAllocatedOn {
 
 protected:
     static void* Alloc(size_t n) {
-        std::shared_ptr<IMemoryManager> allocator = Strategy::getAllocator();
+        auto allocator = Strategy::getAllocator();
         void* p = allocator->Alloc(n + additionalMemory);
-        new(p) std::shared_ptr<IMemoryManager>(allocator);
+        auto allocPlacement = reinterpret_cast<IMemoryManager**>(p);
+        *allocPlacement = allocator;
         return reinterpret_cast<void*>(reinterpret_cast<intptr_t>(p) + additionalMemory);
     }
 
     static void Free(void* p) {
         p = reinterpret_cast<void*>(reinterpret_cast<intptr_t>(p) - additionalMemory);
-        auto deallocator = *reinterpret_cast<std::shared_ptr<IMemoryManager>*>(p);
+        auto allocator = reinterpret_cast<IMemoryManager**>(p);
 #ifdef _print_deallocate
         std::cerr << typeid(*deallocator).name() << std::endl;
 #endif
-        deallocator->Free(p);
-        reinterpret_cast<std::shared_ptr<IMemoryManager>*>(p)->reset();
+        (*allocator)->Free(p);
     }
 
 public:
@@ -67,31 +87,38 @@ public:
 
 
 class RuntimeHeap {
-    static std::shared_ptr<IMemoryManager> _allocator;
+    static IMemoryManager* _allocator;
 
 public:
-    static std::shared_ptr<IMemoryManager> getAllocator() {
+    static IMemoryManager* getAllocator() {
         return _allocator;
     }
 };
-std::shared_ptr<IMemoryManager> RuntimeHeap::_allocator(new DefaultAllocator());
+IMemoryManager* RuntimeHeap::_allocator(new DefaultAllocator());
 
 
 class CMemoryManagerSwitcher {
     friend class CurrentMemoryManager;
 
-    static std::shared_ptr<IMemoryManager> _active;
+    static IMemoryManager* _active;
+    const IMemoryManager* _previous;
+
 public:
-    static void switchAllocator(IMemoryManager* newAllocator) {
-        _active.reset(newAllocator);
+    explicit CMemoryManagerSwitcher(IMemoryManager* newAllocator) :
+            _previous(_active) {
+        _active = newAllocator;
+    }
+
+    ~CMemoryManagerSwitcher() {
+        _active = const_cast<IMemoryManager*>(_previous);
     }
 };
-std::shared_ptr<IMemoryManager> CMemoryManagerSwitcher::_active(new DefaultAllocator());
+IMemoryManager* CMemoryManagerSwitcher::_active(new DefaultAllocator());
 
 
 class CurrentMemoryManager {
 public:
-    static std::shared_ptr<IMemoryManager> getAllocator() {
+    static IMemoryManager* getAllocator() {
         return CMemoryManagerSwitcher::_active;
     }
 };
