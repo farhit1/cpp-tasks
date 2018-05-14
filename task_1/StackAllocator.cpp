@@ -48,7 +48,6 @@ void StackAllocator<T>::construct(U *p, Args&&... args) {
 }
 
 template<typename T>
-template<class U>
 void StackAllocator<T>::destroy(U *p) {
-    ((T*)p)->~T();
+    p->~U();
 }
