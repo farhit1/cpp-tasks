@@ -28,10 +28,12 @@ void DefaultAllocator::_Free(void* ptr) {
 }
 
 IMemoryManager* RuntimeHeap::getAllocator() {
+    if (!_allocator)
+        _allocator = &defaultAllocatorInstance;
     return _allocator;
 }
 
-IMemoryManager* RuntimeHeap::_allocator(&defaultAllocatorInstance);
+IMemoryManager* RuntimeHeap::_allocator(nullptr);
 
 CMemoryManagerSwitcher::CMemoryManagerSwitcher(IMemoryManager* newAllocator) :
         _previous(_active) {
@@ -41,9 +43,11 @@ CMemoryManagerSwitcher::CMemoryManagerSwitcher(IMemoryManager* newAllocator) :
 CMemoryManagerSwitcher::~CMemoryManagerSwitcher() {
     _active = const_cast<IMemoryManager*>(_previous);
 }
-IMemoryManager* CMemoryManagerSwitcher::_active(&defaultAllocatorInstance);
+IMemoryManager* CMemoryManagerSwitcher::_active(nullptr);
 
 IMemoryManager* CurrentMemoryManager::getAllocator() {
+    if (!CMemoryManagerSwitcher::_active)
+        CMemoryManagerSwitcher::_active = &defaultAllocatorInstance;
     return CMemoryManagerSwitcher::_active;
 }
 
