@@ -2,6 +2,7 @@
 #define TUPLE_H
 
 #include <type_traits>
+#include <array>
 
 template<typename... T>
 class Tuple;
@@ -27,7 +28,8 @@ public:
 
     template<typename U>
     void swap(U&& other) {
-        static_assert(std::remove_reference<U>::_empty_tuple_type == true);
+        static_assert(std::is_same<typename std::remove_reference<U>::type::_empty_tuple_type,
+                _empty_tuple_type>::value);
     }
 };
 
@@ -47,13 +49,14 @@ class Tuple<T, Tail...> {
 
     template<typename U, typename T_>
     static Tuple<T, Tail...> _pushFront(U&& value, T_&& tuple) {
-        Tuple<T, Tail...> t((typename Tuple<>::_inner_tuple_type()));
-        t._value = value;
+        Tuple<T, Tail...> t(value, (typename Tuple<>::_inner_tuple_type()));
         t._tail = new Tuple<Tail...>(std::forward<Tuple<Tail...>>(tuple));
         return t;
     }
 
-    Tuple(Tuple<>::_inner_tuple_type _) {}
+    template<typename U, typename... Args>
+    Tuple(const U& value, Tuple<>::_inner_tuple_type _) :
+            _value(value) {};
 
 public:
     Tuple() :
@@ -83,7 +86,8 @@ public:
         return *this;
     }
 
-    Tuple(const Tuple<T, Tail...>& other) {
+    Tuple(const Tuple<T, Tail...>& other) :
+            Tuple() {
         operator=(other);
     }
 
@@ -92,7 +96,8 @@ public:
     }
 
     ~Tuple() {
-        if (_tail) delete _tail;
+        if (_tail)
+            delete _tail;
     }
 
     template<typename U>
@@ -252,7 +257,7 @@ struct TupleHelper {
         less, equal, more
     };
     template<typename T_, typename U_>
-    static cmp compare_values(T_& t, U_& u) {
+    static cmp compare_values(const T_& t, const U_& u) {
         static_assert(std::is_same<typename std::remove_cv<typename std::remove_reference<T_>::type>::type,
                 typename std::remove_cv<typename std::remove_reference<T_>::type>::type>::value);
         if (t._value < u._value)
@@ -285,8 +290,8 @@ struct TupleHelper {
 
 
 template<class... Args>
-Tuple<typename std::remove_reference<Args>::type...> makeTuple(Args&&... args) {
-    return Tuple<typename std::remove_reference<Args>::type...>(std::forward<Args>(args)...);
+Tuple<typename std::decay<Args>::type...> makeTuple(Args&&... args) {
+    return Tuple<typename std::decay<Args>::type...>(std::forward<Args>(args)...);
 }
 
 
@@ -332,35 +337,35 @@ auto tupleCat(Tuples&&... tuples) {
 }
 
 
-template<typename T_, typename U_>
-bool operator<(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator<(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return TupleHelper::compare<true>(t, u, TupleHelper::cmp::less);
 }
 
-template<typename T_, typename U_>
-bool operator==(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator==(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return TupleHelper::compare<true>(t, u, TupleHelper::cmp::equal);
 }
 
-template<typename T_, typename U_>
-bool operator>(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator>(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return TupleHelper::compare<true>(t, u, TupleHelper::cmp::more);
 }
 
-template<typename T_, typename U_>
-bool operator<=(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator<=(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return TupleHelper::compare<true>(t, u, TupleHelper::cmp::less) ||
            TupleHelper::compare<true>(t, u, TupleHelper::cmp::equal);
 }
 
-template<typename T_, typename U_>
-bool operator>=(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator>=(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return TupleHelper::compare<true>(t, u, TupleHelper::cmp::more) ||
            TupleHelper::compare<true>(t, u, TupleHelper::cmp::equal);
 }
 
-template<typename T_, typename U_>
-bool operator!=(T_&& t, U_&& u) {
+template<typename... Args>
+bool operator!=(const Tuple<Args...>& t, const Tuple<Args...>& u) {
     return !TupleHelper::compare<true>(t, u, TupleHelper::cmp::equal);
 }
 
