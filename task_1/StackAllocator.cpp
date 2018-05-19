@@ -13,6 +13,8 @@ void* MemoryPool::blockGet(size_type n) {
 }
 
 void* MemoryPool::get(size_type n) {
+    if (n > blockSize)
+        throw std::bad_alloc();
     if (blockSize - pos < n) {
         auto x = std::make_unique<BlockNode>(
                 std::move(block),
