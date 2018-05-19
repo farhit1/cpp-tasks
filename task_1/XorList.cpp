@@ -72,6 +72,7 @@ XorList<T, Allocator>::operator=(const XorList& other) {
     if (&other == this)
         return *this;
     clear();
+    _nodeAllocator = other._nodeAllocator;
     for (auto it = other.begin(); it != other.end(); ++it)
         push_back(*it);
     return *this;
@@ -274,7 +275,7 @@ void XorList<T, Allocator>::insert_before(Iterator iterator, U&& value) {
 template<typename T, typename Allocator>
 template<typename U>
 void XorList<T, Allocator>::insert_after(Iterator iterator, U&& value) {
-    insert_before(--iterator, std::forward<U>(value));
+    insert_before(++iterator, std::forward<U>(value));
 }
 
 template<typename T, typename Allocator>
