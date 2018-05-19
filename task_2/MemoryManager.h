@@ -61,7 +61,7 @@ class CMemoryManagerSwitcher {
     friend class CurrentMemoryManager;
 
     static IMemoryManager* _active;
-    const IMemoryManager* _previous;
+    IMemoryManager* _previous;
 
 public:
     explicit CMemoryManagerSwitcher(IMemoryManager* newAllocator);
@@ -84,6 +84,8 @@ void* operator new[](size_t n);
 void operator delete(void* p) noexcept;
 
 void operator delete[](void* p) noexcept;
+
+void checkDefaultAllocator();
 
 
 ///////////////////////////////////////////
