@@ -14,16 +14,21 @@ void* MemoryPool::blockGet(size_type n) {
 
 void* MemoryPool::get(size_type n) {
     if (blockSize - pos < n) {
-        auto x = std::unique_ptr<BlockNode>(new BlockNode{
+        auto x = std::make_unique<BlockNode>(
                 std::move(block),
                 std::move(prevBlock)
-        });
+        );
         prevBlock = std::move(x);
-        block = std::move(std::unique_ptr<char[]>(new char[MemoryPool::blockSize]));
+        block.reset(new char[MemoryPool::blockSize]);
         pos = 0;
     }
     return blockGet(n);
 }
+
+MemoryPool::BlockNode::BlockNode(std::unique_ptr<char[]> block,
+                                 std::unique_ptr<BlockNode> nextBlock) :
+        block(std::move(block)),
+        nextBlock(std::move(nextBlock)) {}
 
 template <typename T>
 StackAllocator<T>::StackAllocator() {}
@@ -33,8 +38,7 @@ StackAllocator<T>::~StackAllocator() {}
 
 template <typename T>
 typename StackAllocator<T>::pointer StackAllocator<T>::allocate(
-        typename StackAllocator<int>::size_type n,
-        typename StackAllocator<void>::const_pointer hint) {
+        typename StackAllocator<int>::size_type n) {
     return reinterpret_cast<T*>(MemoryPool::get(n * sizeof(T)));
 }
 
@@ -42,12 +46,12 @@ template<typename T>
 void StackAllocator<T>::deallocate(T* p, unsigned long n) {}
 
 template<typename T>
-template<class U, class... Args>
-void StackAllocator<T>::construct(U *p, Args&&... args) {
-    new((void*)p) U(std::forward<Args>(args)...);
+template<class... Args>
+void StackAllocator<T>::construct(T *p, Args&&... args) {
+    new((void*)p) T(std::forward<Args>(args)...);
 }
 
 template<typename T>
-void StackAllocator<T>::destroy(U *p) {
-    p->~U();
+void StackAllocator<T>::destroy(T *p) {
+    p->~T();
 }
