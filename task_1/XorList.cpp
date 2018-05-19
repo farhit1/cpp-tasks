@@ -39,7 +39,7 @@ XorList<T, Allocator>::XorList(const Allocator& alloc) :
         _front(nullptr),
         _back(nullptr),
         _size(0),
-        _allocator(alloc) {}
+        _nodeAllocator(node_allocator_type(alloc)) {}
 
 template<typename T, typename Allocator>
 XorList<T, Allocator>::XorList(size_t count,
@@ -85,7 +85,9 @@ XorList<T, Allocator>::operator=(XorList&& other) noexcept {
     _front = std::move(other._front);
     _back = std::move(other._back);
     _size = std::move(other._size);
-    _allocator = std::move(other._allocator);
+    _nodeAllocator = std::move(other._nodeAllocator);
+    other._front = nullptr;
+    other._back = nullptr;
     return *this;
 }
 
@@ -108,27 +110,13 @@ XorList<T, Allocator>::~XorList() {
 template<typename T, typename Allocator>
 template<typename U>
 void XorList<T, Allocator>::push_front(U&& value) {
-    Node* newNode = _getNode(std::forward<U>(value));
-    newNode->xor_addr = _front;
-    if (_front != nullptr) {
-        _front->xor_addr = _xor(_front->xor_addr, newNode);
-        _front = newNode;
-    } else
-        _front = _back = newNode;
-    ++_size;
+    insert_before(begin(), std::forward<U>(value));
 }
 
 template<typename T, typename Allocator>
 template<typename U>
 void XorList<T, Allocator>::push_back(U&& value) {
-    Node* newNode = _getNode(std::forward<U>(value));
-    newNode->xor_addr = _back;
-    if (_back != nullptr) {
-        _back->xor_addr = _xor(_back->xor_addr, newNode);
-        _back = newNode;
-    } else
-        _front = _back = newNode;
-    ++_size;
+    insert_before(end(), std::forward<U>(value));
 }
 
 template<typename T, typename Allocator>
@@ -286,24 +274,7 @@ void XorList<T, Allocator>::insert_before(Iterator iterator, U&& value) {
 template<typename T, typename Allocator>
 template<typename U>
 void XorList<T, Allocator>::insert_after(Iterator iterator, U&& value) {
-    Node* newNode = _getNode(std::forward<U>(value));
-    Node* nextNode = iterator._getNextNode();
-    newNode->xor_addr = _xor(nextNode, iterator._node);
-    if (empty())
-        _front = _back = newNode;
-    if (iterator._node != nullptr) {
-        iterator._node->xor_addr = _xor(iterator._node->xor_addr, nextNode);
-        iterator._node->xor_addr = _xor(iterator._node->xor_addr, newNode);
-    }
-    if (nextNode != nullptr) {
-        nextNode->xor_addr = _xor(nextNode->xor_addr, iterator._node);
-        nextNode->xor_addr = _xor(nextNode->xor_addr, newNode);
-    }
-    if (nextNode == _front)
-        _front = newNode;
-    if (iterator._node == _back)
-        _back = newNode;
-    ++_size;
+    insert_before(--iterator, std::forward<U>(value));
 }
 
 template<typename T, typename Allocator>
