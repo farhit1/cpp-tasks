@@ -26,15 +26,20 @@ void* DefaultAllocator::_Alloc(size_t size) {
 }
 
 void DefaultAllocator::_Free(void* ptr) {
+    std::cerr << "free on default allocator\n";
     return free(ptr);
 }
 
-IMemoryManager* RuntimeHeap::getAllocator() {
+void checkDefaultAllocator() {
     if (!defaultAllocatorInit) {
         defaultAllocatorInit = true;
         DefaultAllocator da;
         std::swap(defaultAllocator, da);
     }
+};
+
+IMemoryManager* RuntimeHeap::getAllocator() {
+    checkDefaultAllocator();
     return &defaultAllocator;
 }
 
@@ -46,12 +51,16 @@ CMemoryManagerSwitcher::CMemoryManagerSwitcher(IMemoryManager* newAllocator) :
 }
 
 CMemoryManagerSwitcher::~CMemoryManagerSwitcher() {
-    _active = const_cast<IMemoryManager*>(_previous);
+    _active = _previous;
 }
 IMemoryManager* CMemoryManagerSwitcher::_active(nullptr);
 
 IMemoryManager* CurrentMemoryManager::getAllocator() {
-    return RuntimeHeap::getAllocator();
+    if (!CMemoryManagerSwitcher::_active) {
+        checkDefaultAllocator();
+        CMemoryManagerSwitcher::_active = &defaultAllocator;
+    }
+    return CMemoryManagerSwitcher::_active;
 }
 
 void* operator new(size_t n) {
