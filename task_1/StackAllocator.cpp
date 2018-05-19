@@ -34,6 +34,10 @@ template <typename T>
 StackAllocator<T>::StackAllocator() {}
 
 template <typename T>
+template <class U>
+StackAllocator<T>::StackAllocator(const StackAllocator<U>& other) {}
+
+template <typename T>
 StackAllocator<T>::~StackAllocator() {}
 
 template <typename T>
