@@ -26,7 +26,7 @@ void* DefaultAllocator::_Alloc(size_t size) {
 }
 
 void DefaultAllocator::_Free(void* ptr) {
-    std::cerr << "free on default allocator\n";
+    // std::cerr << "free on default allocator\n";
     return free(ptr);
 }
 
