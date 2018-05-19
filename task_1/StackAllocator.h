@@ -5,16 +5,19 @@
 #include <memory>
 
 class MemoryPool {
-    typedef size_t      size_type;
+    typedef size_t size_type;
 
     static const size_type blockSize = 1e7;
 
-    static std::unique_ptr<char[]>      block;
-    static size_type                    pos;
+    static std::unique_ptr<char[]> block;
+    static size_type pos;
 
     struct BlockNode {
         std::unique_ptr<char[]> block;
         std::unique_ptr<BlockNode> nextBlock;
+
+        BlockNode(std::unique_ptr<char[]> block,
+                  std::unique_ptr<BlockNode> nextBlock);
     };
 
     static std::unique_ptr<BlockNode>   prevBlock;
@@ -35,9 +38,9 @@ class StackAllocator;
 template <>
 class StackAllocator<void> {
 public:
-    typedef void*       pointer;
+    typedef void* pointer;
     typedef const void* const_pointer;
-    typedef void        value_type;
+    typedef void value_type;
 
     template <class U>
     struct rebind {
@@ -49,13 +52,13 @@ public:
 template <typename T>
 class StackAllocator {
 public:
-    typedef T*          pointer;
-    typedef const T*    const_pointer;
-    typedef T&          reference;
-    typedef const T&    const_reference;
-    typedef T           value_type;
-    typedef size_t      size_type;
-    typedef ptrdiff_t   difference_type;
+    typedef T* pointer;
+    typedef const T* const_pointer;
+    typedef T& reference;
+    typedef const T& const_reference;
+    typedef T value_type;
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
 
     template <class U>
     struct rebind {
@@ -64,20 +67,19 @@ public:
 
     StackAllocator();
 
+    template <class U>
+    StackAllocator(const StackAllocator<U>& other);
+
     ~StackAllocator();
 
-    pointer allocate(
-            size_t n,
-            StackAllocator<void>::const_pointer hint = 0
-    );
+    pointer allocate(size_t n);
 
     void deallocate(T* p, size_type n);
 
-    template<class U, class... Args>
-    void construct(U* p, Args&&... args);
+    template<class... Args>
+    void construct(T* p, Args&&... args);
 
-    template<class U>
-    void destroy(U* p);
+    void destroy(T* p);
 };
 
 
