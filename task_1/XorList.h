@@ -7,27 +7,27 @@
 
 template<typename T, typename Allocator = std::allocator<T>>
 class XorList {
-    typedef T           value_type;
-    typedef intptr_t    intptr;
+    typedef T value_type;
+    typedef intptr_t intptr;
     static_assert(std::is_same<typename Allocator::value_type, value_type>::value);
 
     struct Node {
-        value_type  value;
-        Node*       xor_addr;
+        value_type value;
+        Node* xor_addr;
 
-        Node(const value_type&  value, Node* xor_addr);
+        Node(const value_type& value, Node* xor_addr);
         Node(const value_type&& value, Node* xor_addr);
         ~Node() = default;
     };
 
     static Node* _xor(const Node* lhs, const Node* rhs);
 
-    Node*   _front;
-    Node*   _back;
-    size_t  _size;
+    Node* _front;
+    Node* _back;
+    size_t _size;
 
-    Allocator                                           _allocator;
-    typename Allocator::template rebind<Node>::other    _nodeAllocator;
+    typedef typename Allocator::template rebind<Node>::other node_allocator_type;
+    node_allocator_type _nodeAllocator;
 
     template<typename U>
     Node* _getNode(U&& value);
