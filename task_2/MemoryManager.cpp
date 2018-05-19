@@ -1,6 +1,8 @@
+#include <iostream>
 #include "MemoryManager.h"
 
-DefaultAllocator defaultAllocatorInstance;
+bool defaultAllocatorInit;
+DefaultAllocator defaultAllocator;
 
 void* IMemoryManager::Alloc(size_t size) {
     ++_counter;
@@ -28,9 +30,12 @@ void DefaultAllocator::_Free(void* ptr) {
 }
 
 IMemoryManager* RuntimeHeap::getAllocator() {
-    if (!_allocator)
-        _allocator = &defaultAllocatorInstance;
-    return _allocator;
+    if (!defaultAllocatorInit) {
+        defaultAllocatorInit = true;
+        DefaultAllocator da;
+        std::swap(defaultAllocator, da);
+    }
+    return &defaultAllocator;
 }
 
 IMemoryManager* RuntimeHeap::_allocator(nullptr);
@@ -46,9 +51,7 @@ CMemoryManagerSwitcher::~CMemoryManagerSwitcher() {
 IMemoryManager* CMemoryManagerSwitcher::_active(nullptr);
 
 IMemoryManager* CurrentMemoryManager::getAllocator() {
-    if (!CMemoryManagerSwitcher::_active)
-        CMemoryManagerSwitcher::_active = &defaultAllocatorInstance;
-    return CMemoryManagerSwitcher::_active;
+    return RuntimeHeap::getAllocator();
 }
 
 void* operator new(size_t n) {
